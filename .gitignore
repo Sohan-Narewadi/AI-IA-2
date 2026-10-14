@@ -1,2 +1,4 @@
 project/logs/dashboard_live.jsonl
 __pycache__/
+.env
+*.key
