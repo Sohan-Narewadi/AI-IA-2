@@ -1,0 +1,18 @@
+Campus AI Adoption Report 2026 (sample document for the Research Assistant Agent)
+
+Summary
+A survey of 5 departments at a engineering college studied how students use AI tools for studying.
+In total 1,250 students were surveyed. 68% reported using an LLM chatbot at least weekly.
+The most common use was explaining concepts (41%), followed by debugging code (33%) and
+summarising notes (18%). Only 8% used AI to write full assignments.
+
+Findings
+1. Students who used AI for concept explanation improved their average test score by 6.5 points.
+2. Departments with a written AI-use policy reported 40% fewer academic integrity cases.
+3. The Electronics & Computer Engineering department had the highest adoption rate at 81%.
+
+Recommendations
+- Introduce a clear AI-use policy in every department.
+- Run a workshop on prompt writing and verifying AI answers.
+- Allocate a budget of Rs. 2,50,000 for campus-wide AI tool licences; the expected number of
+  users is 1,250 so the target cost per student must stay below Rs. 250.
