@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research Agent Dashboard</title>
+<style>
+:root{--bg:#f5f6fa;--card:#fff;--ink:#1c2233;--muted:#68708a;--line:#e1e4ee;--accent:#4457d8;
+--think:#e8ecff;--act:#fff1d6;--obs:#e0f5e8;--fin:#d9f0ff;--bad:#fde4e4;--badink:#a12828}
+@media (prefers-color-scheme:dark){:root{--bg:#12151f;--card:#1b2030;--ink:#e8ebf5;--muted:#9aa2bd;--line:#2c3350;
+--accent:#8c9bff;--think:#262e55;--act:#4a3b1a;--obs:#173a28;--fin:#173a52;--bad:#4a2020;--badink:#ff9a9a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,sans-serif}
+header{padding:16px 24px;border-bottom:1px solid var(--line);background:var(--card);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+h1{font-size:19px;margin:0}
+.sub{color:var(--muted);font-size:13px}
+main{max-width:1250px;margin:0 auto;padding:20px;display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:20px}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.card h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+textarea{width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--bg);color:var(--ink);resize:vertical}
+.badge{font-size:12px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.badge.ok{color:#1c8a4a;border-color:#1c8a4a}.badge.no{color:var(--badink);border-color:var(--badink)}
+.goalbox{background:var(--bg);border:1px dashed var(--line);border-radius:8px;padding:10px;margin-bottom:12px}
+.step{border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden;animation:in .35s ease}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.step .hd{padding:6px 12px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;background:var(--bg)}
+.blk{padding:8px 12px;border-top:1px solid var(--line);white-space:pre-wrap;word-break:break-word}
+.blk b{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.think{background:var(--think)}.act{background:var(--act)}.obs{background:var(--obs)}.fin{background:var(--fin)}.err{background:var(--bad);color:var(--badink)}
+code{font-family:Consolas,monospace;font-size:13px}
+.tool{display:flex;gap:8px;align-items:baseline;padding:7px 9px;border-radius:8px;border:1px solid transparent;transition:.2s}
+.tool.hit{background:var(--act);border-color:#e0a82e}
+.tool small{color:var(--muted)}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cmp>div{border:1px solid var(--line);border-radius:8px;padding:10px;min-height:60px;white-space:pre-wrap;word-break:break-word;font-size:14px}
+.cmp h3{margin:0 0 4px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.empty{color:var(--muted);text-align:center;padding:30px 10px}
+details summary{cursor:pointer;color:var(--accent)}
+details img{max-width:100%;margin-top:10px;border-radius:8px;background:#fff}
+ul.g{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:14px}
+.big{font-size:26px;font-weight:600}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Research Assistant Agent &mdash; Live Dashboard</h1>
+    <div class="sub">ReAct LLM agent with 5 tools &middot; Sheersh Nagaich, Radhesh Nair, Sohan Narewadi</div>
+  </div>
+  <div class="row">
+    <span class="badge" id="keyBadge">checking key&hellip;</span>
+    <button id="mLive">Live</button><button id="mReplay">Replay</button>
+  </div>
+</header>
+
+<main>
+<section>
+  <div class="card">
+    <h2>1 &middot; Pick a goal</h2>
+    <div class="row" id="presets"></div>
+    <div id="freeWrap" style="margin-top:12px">
+      <textarea id="free" rows="2" placeholder="Type your own goal or a follow-up question (Live mode)&hellip;"></textarea>
+      <div class="row" style="margin-top:8px"><button class="primary" id="runFree">Run my goal</button>
+      <span class="sub" id="modeNote"></span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2 &middot; ReAct loop <span id="stepCount" class="badge" style="margin-left:8px">step 0 / 10</span>
+      <span id="modelName" class="badge"></span></h2>
+    <div id="timeline"><div class="empty">Pick a goal above. Each Thought &rarr; Action &rarr; Observation will appear here.</div></div>
+  </div>
+
+  <div class="card">
+    <h2>3 &middot; Classical (rule-based) vs LLM agent &mdash; same goal</h2>
+    <div class="cmp">
+      <div><h3>Classical agent</h3><span id="clsOut" class="sub">&mdash;</span></div>
+      <div><h3>LLM ReAct agent</h3><span id="llmOut" class="sub">&mdash;</span></div>
+    </div>
+  </div>
+</section>
+
+<aside>
+  <div class="card">
+    <h2>Tools (highlight = used)</h2>
+    <div id="tools"></div>
+  </div>
+  <div class="card">
+    <h2>Short-term memory</h2>
+    <div class="big" id="memCount">0</div>
+    <div class="sub">messages kept in the conversation (resent to the LLM every step)</div>
+    <div class="row" style="margin-top:10px"><button id="reset">Reset memory</button></div>
+  </div>
+  <div class="card">
+    <h2>How it works</h2>
+    <details><summary>Show architecture &amp; guardrails</summary>
+      <img src="/architecture.png" alt="architecture diagram">
+      <ul class="g">
+        <li>LLM chooses each step; our code only runs the tool it asks for.</li>
+        <li>Output is cut at &ldquo;Observation:&rdquo; so the LLM cannot invent tool results.</li>
+        <li>Unknown tool / bad format &rarr; ERROR observation, LLM self-corrects.</li>
+        <li>Hard limit of 10 steps. Calculator uses safe <code>ast</code>, never <code>eval</code>.</li>
+        <li>Every event is logged to <code>logs/*.jsonl</code> with timestamps.</li>
+      </ul>
+    </details>
+  </div>
+</aside>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let mode = 'replay', goals = [], status = {has_key:false}, running = false, es = null, replayCount = 0;
+
+async function j(url){ return (await fetch(url)).json(); }
+
+function setMode(m){
+  mode = m;
+  $('mLive').classList.toggle('on', m==='live'); $('mReplay').classList.toggle('on', m==='replay');
+  $('freeWrap').style.display = m==='live' ? '' : 'none';
+  $('modeNote').textContent = '';
+  buildPresets();
+}
+function buildPresets(){
+  const p = $('presets'); p.innerHTML = '';
+  goals.forEach((g,i) => {
+    const b = document.createElement('button'); b.textContent = 'Goal ' + (i+1);
+    b.title = g; b.onclick = () => start(g, i+1); p.appendChild(b);
+  });
+  if (mode==='replay'){
+    const b = document.createElement('button'); b.textContent = 'Memory follow-up';
+    b.title = 'Which of the numbers you computed earlier was the cost per student?';
+    b.onclick = () => start('Which of the numbers you computed earlier was the cost per student?', 4); p.appendChild(b);
+  }
+}
+function resetView(goal){
+  $('timeline').innerHTML = '';
+  $('stepCount').textContent = 'step 0 / ' + (status.max_steps||10); $('modelName').textContent = '';
+  $('llmOut').textContent = 'running…'; $('clsOut').textContent = '…';
+  document.querySelectorAll('.tool').forEach(t => t.classList.remove('hit'));
+  const g = document.createElement('div'); g.className = 'goalbox';
+  g.innerHTML = '<b>Goal:</b> ' + esc(goal); $('timeline').appendChild(g);
+}
+function stepCard(ev){
+  let t = ev.text, th='', act='', inp='', fin='';
+  const f = t.indexOf('Final Answer:');
+  if (f>=0){ fin = t.slice(f+13).trim(); t = t.slice(0,f); }
+  const m1 = t.match(/Thought:\s*([\s\S]*?)(?=\nAction:|$)/); if (m1) th = m1[1].trim();
+  const m2 = t.match(/Action:\s*(.+)/); if (m2) act = m2[1].trim();
+  const m3 = t.match(/Action Input:\s*([\s\S]*)/); if (m3) inp = m3[1].trim();
+  if (!th && !act && !fin) th = ev.text;
+  const d = document.createElement('div'); d.className = 'step'; d.id = 'step'+ev.step;
+  d.innerHTML = `<div class="hd"><span>Step ${ev.step}</span><span>${esc(ev.model||'')}</span></div>`
+    + (th ? `<div class="blk think"><b>Thought</b>${esc(th)}</div>` : '')
+    + (act ? `<div class="blk act"><b>Action</b>tool: <code>${esc(act)}</code>\ninput: <code>${esc(inp)}</code></div>` : '')
+    + (fin ? `<div class="blk fin"><b>Final answer</b>${esc(fin)}</div>` : '');
+  return d;
+}
+function handle(ev){
+  const tl = $('timeline');
+  if (ev.kind==='llm'){
+    tl.appendChild(stepCard(ev));
+    $('stepCount').textContent = 'step ' + ev.step + ' / ' + (status.max_steps||10);
+    $('modelName').textContent = (ev.model||'').split('/').pop();
+  } else if (ev.kind==='tool'){
+    const d = $('step'+ev.step);
+    const o = document.createElement('div'); o.className = 'blk obs';
+    o.innerHTML = '<b>Observation (real tool output)</b>' + esc(ev.observation);
+    (d||tl).appendChild(o);
+    document.querySelectorAll('.tool').forEach(t => t.classList.toggle('hit', t.dataset.n===ev.tool));
+  } else if (ev.kind==='final'){
+    $('llmOut').textContent = ev.text;
+  } else if (ev.kind==='error'){
+    const o = document.createElement('div'); o.className = 'blk err'; o.style.borderRadius='8px';
+    o.innerHTML = '<b>Error</b>' + esc(ev.text); tl.appendChild(o); $('llmOut').textContent = 'failed — try Replay';
+  } else if (ev.kind==='done' && ev.memory_messages!=null){
+    $('memCount').textContent = ev.memory_messages;
+  }
+  tl.lastElementChild && tl.lastElementChild.scrollIntoView({block:'nearest', behavior:'smooth'});
+}
+async function start(goal, n){
+  if (running) return;
+  running = true; resetView(goal);
+  j('/api/classical?goal=' + encodeURIComponent(goal)).then(r => $('clsOut').textContent = r.answer);
+  if (mode==='replay'){
+    const evs = await j('/api/replay?n=' + n);
+    for (const ev of evs){ if (ev.kind==='goal') continue; handle(ev); await sleep(ev.kind==='llm'?900:600); }
+    replayCount += evs.filter(e => e.kind!=='goal').length;
+    $('memCount').textContent = 'n/a (replay)';
+    running = false;
+  } else {
+    if (!status.has_key){ handle({kind:'error', text:'OPENROUTER_API_KEY is not set. Switch to Replay mode.'}); running=false; return; }
+    es = new EventSource('/api/run?goal=' + encodeURIComponent(goal));
+    es.onmessage = e => {
+      const ev = JSON.parse(e.data);
+      if (ev.kind==='goal') return;
+      handle(ev);
+      if (ev.kind==='done'){ es.close(); running = false; }
+    };
+    es.onerror = () => { es.close(); running = false; };
+  }
+}
+$('runFree').onclick = () => { const v = $('free').value.trim(); if (v) start(v, 0); };
+$('reset').onclick = async () => { await j('/api/reset'); $('memCount').textContent = '0'; };
+$('mLive').onclick = () => setMode('live'); $('mReplay').onclick = () => setMode('replay');
+
+(async function init(){
+  status = await j('/api/status'); goals = await j('/api/goals');
+  const kb = $('keyBadge');
+  kb.textContent = status.has_key ? 'API key: set' : 'API key: not set';
+  kb.className = 'badge ' + (status.has_key ? 'ok' : 'no');
+  $('memCount').textContent = status.memory_messages;
+  (await j('/api/tools')).forEach(t => {
+    const d = document.createElement('div'); d.className = 'tool'; d.dataset.n = t.name;
+    d.innerHTML = `<code>${esc(t.name)}</code><small>${esc(t.desc)}</small>`; $('tools').appendChild(d);
+  });
+  setMode(status.has_key ? 'live' : 'replay');
+})();
+</script>
+</body>
+</html>
